@@ -1,11 +1,8 @@
 package com.tiandy.wangxin.testmission.devicedetail;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.constraint.ConstraintLayout;
-import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.transition.ChangeBounds;
 import android.transition.ChangeTransform;
@@ -18,17 +15,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.blankj.utilcode.util.LogUtils;
-import com.chad.library.adapter.base.BaseQuickAdapter;
-import com.chad.library.adapter.base.BaseViewHolder;
 import com.mobile.common.macro.SDKMacro;
 import com.mobile.wiget.business.BusinessController;
+import com.tiandy.wangxin.testmission.MyApplication;
 import com.tiandy.wangxin.testmission.R;
 import com.tiandy.wangxin.testmission.base.BaseActivity;
 import com.tiandy.wangxin.testmission.devicelist.bean.DeviceInfo;
 import com.tiandy.wangxin.testmission.util.DoubleClickListener;
 import com.tiandy.wangxin.testmission.util.LogonUtil;
-
-import java.util.ArrayList;
 
 
 /**
@@ -54,10 +48,10 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_device_detail);
-        initView();
+        setContentView(MyApplication.sConstraintLayout);
+//        initView();
 
-//        BusinessController.getInstance().setMainNotifyListener(this);// 注册主回调
+        BusinessController.getInstance().setMainNotifyListener(this);// 注册主回调
         /**
          * 2、设置WindowTransition,除指定的ShareElement外，其它所有View都会执行这个Transition动画
          */
@@ -71,27 +65,28 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
         TransitionSet transitionSet = new TransitionSet();
         transitionSet.addTransition(new ChangeBounds());
         transitionSet.addTransition(new ChangeTransform());
-        transitionSet.addTarget(mConstraintLayout);
+        transitionSet.addTarget(MyApplication.sConstraintLayout);
         getWindow().setSharedElementEnterTransition(transitionSet);
         getWindow().setSharedElementExitTransition(transitionSet);
 
 
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
-        ArrayList<String> arrayList = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            arrayList.add(String.valueOf(i + 1));
-        }
-        mRecyclerView.setAdapter(new BaseQuickAdapter<String, BaseViewHolder>(R.layout.item_route, arrayList) {
-            @Override
-            protected void convert(@NonNull BaseViewHolder helper, String item) {
-
-            }
-        });
-//        int loginFlag = logonDDNSDeviceForVideo(mDeviceInfo);
-//        LogUtils.d("loginFlag" + loginFlag);
-//        mDeviceInfo.setLoginFlag(loginFlag);
-//        playAllRoute(mConstraintLayout, mDeviceInfo);
-        LogonUtil.fillupSurfaceView(mSurfaceView1, mDeviceInfo.getLoginFlag(), 1);
+//        mRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+//        ArrayList<String> arrayList = new ArrayList<>();
+//        for (int i = 0; i < 10; i++) {
+//            arrayList.add(String.valueOf(i + 1));
+//        }
+//        mRecyclerView.setAdapter(new BaseQuickAdapter<String, BaseViewHolder>(R.layout.item_route, arrayList) {
+//            @Override
+//            protected void convert(@NonNull BaseViewHolder helper, String item) {
+//
+//            }
+//        });
+////        int loginFlag = logonDDNSDeviceForVideo(mDeviceInfo);
+////        LogUtils.d("loginFlag" + loginFlag);
+////        mDeviceInfo.setLoginFlag(loginFlag);
+////        playAllRoute(mConstraintLayout, mDeviceInfo);
+//        BusinessController.getInstance().removeSurfaceView(mSurfaceView2.getId());
+//        LogonUtil.fillupSurfaceView(mSurfaceView2, mDeviceInfo.getLoginFlag(), 1);
     }
 
     private void initView() {
@@ -100,7 +95,6 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
         mSurfaceView2 = findViewById(R.id.surfaceView2);
         mSurfaceView3 = findViewById(R.id.surfaceView3);
         mSurfaceView4 = findViewById(R.id.surfaceView4);
-        mConstraintLayout = findViewById(R.id.constraintLayout);
         mTvVolume = findViewById(R.id.tv_volume);
         mIvRoutes = findViewById(R.id.iv_routes);
         mTvStream = findViewById(R.id.tv_stream);
@@ -125,9 +119,9 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
 
     @Override
     public void onBackPressed() {
-        Intent intent = new Intent();
-        intent.putExtra("deviceInfo", mDeviceInfo);
-        setResult(RESULT_OK, intent);
+//        Intent intent = new Intent();
+//        intent.putExtra("deviceInfo", mDeviceInfo);
+//        setResult(RESULT_OK, intent);
         super.onBackPressed();
 
     }
@@ -227,12 +221,12 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        LogUtils.d("onDestroy");
-        ArrayList<Integer> playFlags = mDeviceInfo.getPlayFlags();
-        for (Integer playFlag : playFlags) {
-            LogonUtil.stopPlay(playFlag);
-        }
-        LogonUtil.logoff(mDeviceInfo.getLoginFlag());
+//        LogUtils.d("onDestroy");
+//        ArrayList<Integer> playFlags = mDeviceInfo.getPlayFlags();
+//        for (Integer playFlag : playFlags) {
+//            LogonUtil.stopPlay(playFlag);
+//        }
+//        LogonUtil.logoff(mDeviceInfo.getLoginFlag());
 
     }
 }

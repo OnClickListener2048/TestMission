@@ -3,6 +3,7 @@ package com.tiandy.wangxin.testmission.devicelist;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.graphics.PixelFormat;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
@@ -28,6 +29,7 @@ import com.mobile.common.macro.SDKMacro;
 import com.mobile.common.po.ChannelNum;
 import com.mobile.wiget.business.BusinessController;
 import com.tbruyelle.rxpermissions2.RxPermissions;
+import com.tiandy.wangxin.testmission.MyApplication;
 import com.tiandy.wangxin.testmission.R;
 import com.tiandy.wangxin.testmission.adddevice.AddDeviceActivity;
 import com.tiandy.wangxin.testmission.base.BaseActivity;
@@ -44,9 +46,7 @@ import java.util.List;
 import io.reactivex.functions.Consumer;
 
 import static com.tiandy.wangxin.testmission.util.LogonUtil.clearSelected;
-import static com.tiandy.wangxin.testmission.util.LogonUtil.logoff;
 import static com.tiandy.wangxin.testmission.util.LogonUtil.logonDDNSDeviceForVideo;
-import static com.tiandy.wangxin.testmission.util.LogonUtil.stopAll;
 
 public class DeviceListActivity extends BaseActivity implements DeviceListContract.IDeviceListView, BusinessController.MainNotifyListener {
 
@@ -58,7 +58,6 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
     private AppCompatImageView mIvAdd;
     private RecyclerView mRecyclerView;
     List<DeviceInfo> deviceInfoList;
-    ArrayList<ViewGroup> mViewGroups = new ArrayList<>();
     ArrayList<View> mViews = new ArrayList<>();
     private BaseQuickAdapter<DeviceInfo, BaseViewHolder> mDeviceInfoBaseViewHolderBaseQuickAdapter;
     private AppCompatImageView mIvAddBig;
@@ -90,6 +89,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                         mDeviceListPresenter.loadLocalDeviceList();
                     }
                 });
+        getWindow().setFormat(PixelFormat.TRANSLUCENT);
     }
 
     @Override
@@ -102,10 +102,10 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
     protected void onResume() {
         super.onResume();
         LogUtils.d("restraintDevice" + restraintDevice);
-        if (restraintDevice != null) {
-            loginFlag = logonDDNSDeviceForVideo(restraintDevice);
-            playAllRoute(constraintLayout, restraintDevice);
-        }
+//        if (restraintDevice != null) {
+//            loginFlag = logonDDNSDeviceForVideo(restraintDevice);
+//            playAllRoute(constraintLayout, restraintDevice);
+//        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -125,7 +125,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                 loginFlag = logonDDNSDeviceForVideo(item);
                 item.setLoginFlag(loginFlag);
                 mViews.add(helper.getView(R.id.iv_play));
-                mViewGroups.add((ViewGroup) helper.getView(R.id.constraintLayout));
+                MyApplication.sConstraintLayout = helper.getView(R.id.constraintLayout);
                 ChannelNum ddnsChannels = LogonUtil.getDDNSChannels(loginFlag);
                 LogUtils.d("loginFlag" + loginFlag);
                 LogUtils.d("ddnsChannels" + ddnsChannels.num);
@@ -144,7 +144,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                 helper.getView(R.id.iv_play).setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        LogonUtil.stopAll(deviceInfoList, mViewGroups, mViews);
+                        LogonUtil.stopAll(deviceInfoList, mViews);
                         helper.setVisible(R.id.iv_play, false);
                         helper.getView(R.id.constraintLayout).setClickable(true);
                         playAllRoute((ConstraintLayout) helper.getView(R.id.constraintLayout), item);
@@ -154,8 +154,8 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                 helper.getView(R.id.tv_more).setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+                        ((ViewGroup) helper.getView(R.id.rl_content)).removeView(helper.getView(R.id.constraintLayout));
                         DeviceListActivity.this.restraintDevice = item;
-                        DeviceListActivity.this.constraintLayout = helper.getView(R.id.constraintLayout);
 //                        stopAll(deviceInfoList, mViewGroups, mViews);
                         helper.setVisible(R.id.iv_play, false);
 //                        logoff(item.getLoginFlag());
@@ -164,6 +164,16 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                         Pair<View, String> pair = new Pair<>(helper.getView(R.id.constraintLayout), ViewCompat.getTransitionName(helper.getView(R.id.constraintLayout)));
                         ActivityOptionsCompat activityOptionsCompat = ActivityOptionsCompat.makeSceneTransitionAnimation(DeviceListActivity.this, pair);
                         ActivityCompat.startActivityForResult(DeviceListActivity.this, intent, 5000, activityOptionsCompat.toBundle());
+
+//                        final View view = helper.getView(R.id.constraintLayout);
+//
+//                        int[] location = new int[2];
+//                        view.getLocationOnScreen(location);
+//                        LogUtils.d("location" + location[0]);
+//                        LogUtils.d("location" + location[1]);
+//                        LogUtils.d("getStatusBarheight"+LogonUtil.getStatusBarHeight(DeviceListActivity.this));
+//                        ObjectAnimator animator = ObjectAnimator.ofFloat(view, "translationY", -location[1]+ LogonUtil.getStatusBarHeight(DeviceListActivity.this));
+//                        animator.start();
                     }
                 });
 
@@ -274,18 +284,18 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 5000) {
-            restraintDevice = (DeviceInfo) data.getSerializableExtra("deviceInfo");
-            LogUtils.d("restraintDevice" + restraintDevice);
-            int openRoute = restraintDevice.getOpenRoute();
-            LogUtils.d("openRoute" + openRoute);
-            if (restraintDevice.isOpen() || openRoute != -1) {
-                int childCount = constraintLayout.getChildCount();
-                for (int j = 0; j < childCount; j++) {
-                    if (j != openRoute) {
-                        constraintLayout.getChildAt(j).setVisibility(View.GONE);
-                    }
-                }
-            }
+//            restraintDevice = (DeviceInfo) data.getSerializableExtra("deviceInfo");
+//            LogUtils.d("restraintDevice" + restraintDevice);
+//            int openRoute = restraintDevice.getOpenRoute();
+//            LogUtils.d("openRoute" + openRoute);
+//            if (restraintDevice.isOpen() || openRoute != -1) {
+//                int childCount = constraintLayout.getChildCount();
+//                for (int j = 0; j < childCount; j++) {
+//                    if (j != openRoute) {
+//                        constraintLayout.getChildAt(j).setVisibility(View.GONE);
+//                    }
+//                }
+//            }
         } else if (resultCode == RESULT_OK) {
             mDeviceListPresenter.loadLocalDeviceList();
         }
@@ -295,7 +305,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
 
     @Override
     public void MainNotifyFun(int i, int i1, String s, int i2, Object o) {
-        LogUtils.d("SDKMacro-------"+i1);
+        LogUtils.d("SDKMacro-------" + i1);
         switch (i1) {
             case SDKMacro.EVENT_LOGIN_SUCCESS: // 登录成功
                 Toast.makeText(this, R.string.login_success,

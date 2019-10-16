@@ -1,14 +1,18 @@
 package com.tiandy.wangxin.testmission.util;
 
+import android.content.Context;
+import android.content.res.Resources;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.blankj.utilcode.util.LogUtils;
 import com.mobile.common.macro.SDKMacro;
 import com.mobile.common.po.ChannelNum;
 import com.mobile.common.po.LogonHostInfo;
 import com.mobile.common.po.RealPlayInfo;
 import com.mobile.wiget.business.BusinessController;
+import com.tiandy.wangxin.testmission.MyApplication;
 import com.tiandy.wangxin.testmission.devicelist.bean.DeviceInfo;
 
 import java.util.ArrayList;
@@ -61,6 +65,7 @@ public class LogonUtil {
         realPlayInfo.m_iStream_type = 0;// 码流
         realPlayInfo.m_lHwnd = surfaceView.getId();
         realPlayInfo.m_iChannel = route + 1;
+        LogUtils.d("surfaceView.getId()" + surfaceView.getId());
         return BusinessController.getInstance().sdkRealplayStart(loginFlag,
                 realPlayInfo, surfaceView);
     }
@@ -69,10 +74,8 @@ public class LogonUtil {
         return BusinessController.getInstance().sdkRealplayStop(playFlag);
     }
 
-    public static void stopAll(List<DeviceInfo> deviceInfoList, ArrayList<ViewGroup> viewGroups, ArrayList<View> views) {
-        for (ViewGroup viewGroup : viewGroups) {
-            clearSelected(viewGroup);
-        }
+    public static void stopAll(List<DeviceInfo> deviceInfoList, ArrayList<View> views) {
+        clearSelected(MyApplication.sConstraintLayout);
         for (View view : views) {
             view.setVisibility(View.VISIBLE);
         }
@@ -97,7 +100,6 @@ public class LogonUtil {
     }
 
 
-
     public static int logonDDNSDeviceForVideo(DeviceInfo deviceInfo) {
 
         LogonHostInfo logonInfo = new LogonHostInfo();
@@ -117,6 +119,20 @@ public class LogonUtil {
         return BusinessController.getInstance().sdkLogonHostByType(
                 uuidStr, 1, logonInfo);
 
+    }
+
+
+    /**
+     * 获取状态栏高度
+     *
+     * @param context
+     * @return
+     */
+    public static int getStatusBarHeight(Context context) {
+        Resources resources = context.getResources();
+        int resourceId = resources.getIdentifier("status_bar_height", "dimen", "android");
+        int height = resources.getDimensionPixelSize(resourceId);
+        return height;
     }
 
 
