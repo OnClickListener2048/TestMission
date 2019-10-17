@@ -41,8 +41,9 @@
         android:id="@+id/rl_content"
         android:layout_width="match_parent"
         android:clipChildren="false"
+        android:background="@color/black"
         android:clipToPadding="false"
-        android:layout_height="wrap_content">
+        android:layout_height="208dp">
 
 
 
@@ -51,6 +52,7 @@
             android:transitionName="@string/transitionName"
             android:layout_width="match_parent"
             android:clickable="false"
+            android:background="@color/black"
             android:layout_height="208dp">
 
 
@@ -111,8 +113,9 @@
 
         <ImageView
             android:id="@+id/iv_play"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:scaleType="center"
+            android:layout_height="match_parent"
             android:layout_centerInParent="true"
             android:src="@mipmap/play" />
     </RelativeLayout>

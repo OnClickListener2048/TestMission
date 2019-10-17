@@ -17,7 +17,6 @@ import android.widget.Toast;
 import com.blankj.utilcode.util.LogUtils;
 import com.mobile.common.macro.SDKMacro;
 import com.mobile.wiget.business.BusinessController;
-import com.tiandy.wangxin.testmission.MyApplication;
 import com.tiandy.wangxin.testmission.R;
 import com.tiandy.wangxin.testmission.base.BaseActivity;
 import com.tiandy.wangxin.testmission.devicelist.bean.DeviceInfo;
@@ -48,7 +47,7 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(MyApplication.sConstraintLayout);
+        setContentView(R.layout.activity_device_detail);
 //        initView();
 
         BusinessController.getInstance().setMainNotifyListener(this);// 注册主回调
@@ -65,7 +64,7 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
         TransitionSet transitionSet = new TransitionSet();
         transitionSet.addTransition(new ChangeBounds());
         transitionSet.addTransition(new ChangeTransform());
-        transitionSet.addTarget(MyApplication.sConstraintLayout);
+        transitionSet.addTarget(mConstraintLayout);
         getWindow().setSharedElementEnterTransition(transitionSet);
         getWindow().setSharedElementExitTransition(transitionSet);
 

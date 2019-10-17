@@ -1,8 +1,6 @@
 package com.tiandy.wangxin.testmission;
 
-import android.annotation.SuppressLint;
 import android.app.Application;
-import android.support.constraint.ConstraintLayout;
 
 
 /**
@@ -11,8 +9,6 @@ import android.support.constraint.ConstraintLayout;
 
 public class MyApplication extends Application {
 
-    @SuppressLint("StaticFieldLeak")
-    public static ConstraintLayout sConstraintLayout;
 
     @Override
     public void onCreate() {

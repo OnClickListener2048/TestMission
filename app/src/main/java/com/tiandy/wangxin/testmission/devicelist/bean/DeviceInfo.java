@@ -36,6 +36,8 @@ public class DeviceInfo implements Serializable {
     private boolean isOpen;
     @Transient
     private int openRoute = -1;
+    @Transient
+    boolean isPlaying;
 
 
 
@@ -145,6 +147,14 @@ public class DeviceInfo implements Serializable {
 
     public void setOpenRoute(int openRoute) {
         this.openRoute = openRoute;
+    }
+
+    public boolean isPlaying() {
+        return isPlaying;
+    }
+
+    public void setPlaying(boolean playing) {
+        isPlaying = playing;
     }
 
     @Override

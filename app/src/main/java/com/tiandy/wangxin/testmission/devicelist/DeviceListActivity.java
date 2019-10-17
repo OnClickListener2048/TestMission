@@ -1,16 +1,14 @@
 package com.tiandy.wangxin.testmission.devicelist;
 
 import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.graphics.PixelFormat;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.ActivityOptionsCompat;
-import android.support.v4.util.Pair;
-import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.AppCompatImageView;
 import android.support.v7.widget.AppCompatTextView;
 import android.support.v7.widget.LinearLayoutManager;
@@ -18,10 +16,13 @@ import android.support.v7.widget.RecyclerView;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.blankj.utilcode.util.ActivityUtils;
+import com.blankj.utilcode.util.FragmentUtils;
 import com.blankj.utilcode.util.LogUtils;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.BaseViewHolder;
@@ -29,13 +30,12 @@ import com.mobile.common.macro.SDKMacro;
 import com.mobile.common.po.ChannelNum;
 import com.mobile.wiget.business.BusinessController;
 import com.tbruyelle.rxpermissions2.RxPermissions;
-import com.tiandy.wangxin.testmission.MyApplication;
 import com.tiandy.wangxin.testmission.R;
 import com.tiandy.wangxin.testmission.adddevice.AddDeviceActivity;
 import com.tiandy.wangxin.testmission.base.BaseActivity;
 import com.tiandy.wangxin.testmission.dbhelper.DbGreenDAOHelper;
-import com.tiandy.wangxin.testmission.devicedetail.DeviceDetailActivity;
 import com.tiandy.wangxin.testmission.devicelist.bean.DeviceInfo;
+import com.tiandy.wangxin.testmission.devicelist.fragment.DeviceDetailFragment;
 import com.tiandy.wangxin.testmission.devicesetting.DeviceSettingActivity;
 import com.tiandy.wangxin.testmission.util.DoubleClickListener;
 import com.tiandy.wangxin.testmission.util.LogonUtil;
@@ -45,8 +45,8 @@ import java.util.List;
 
 import io.reactivex.functions.Consumer;
 
-import static com.tiandy.wangxin.testmission.util.LogonUtil.clearSelected;
 import static com.tiandy.wangxin.testmission.util.LogonUtil.logonDDNSDeviceForVideo;
+import static com.tiandy.wangxin.testmission.util.LogonUtil.stopOthers;
 
 public class DeviceListActivity extends BaseActivity implements DeviceListContract.IDeviceListView, BusinessController.MainNotifyListener {
 
@@ -59,6 +59,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
     private RecyclerView mRecyclerView;
     List<DeviceInfo> deviceInfoList;
     ArrayList<View> mViews = new ArrayList<>();
+    ArrayList<View> containers = new ArrayList<>();
     private BaseQuickAdapter<DeviceInfo, BaseViewHolder> mDeviceInfoBaseViewHolderBaseQuickAdapter;
     private AppCompatImageView mIvAddBig;
     /**
@@ -68,11 +69,20 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
     private int loginFlag;
     private DeviceInfo restraintDevice;
     private ConstraintLayout constraintLayout;
+    private FrameLayout mFrameLayout;
+    private boolean canScrollVertically = true;
+    private RelativeLayout mRlContent;
+    private boolean isOpen = false;
+    private ObjectAnimator mSurfaceViewObjectAnimator;
+    private ObjectAnimator mTitleAlphaObjectAnimator;
+    private ObjectAnimator mFlAlphaObjectAnimator;
+    private DeviceDetailFragment mDeviceDetailFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        initView();
         BusinessController.getInstance().initSdkDemo();
         BusinessController.getInstance().setMainNotifyListener(this);// 注册主回调
         RxPermissions rxPermissions = new RxPermissions(this);
@@ -89,7 +99,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                         mDeviceListPresenter.loadLocalDeviceList();
                     }
                 });
-        getWindow().setFormat(PixelFormat.TRANSLUCENT);
+
     }
 
     @Override
@@ -114,37 +124,42 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
         mTvAddDevice = findViewById(R.id.tv_add_device);
         mIvAdd = findViewById(R.id.iv_add);
         mRecyclerView = findViewById(R.id.recyclerView);
+        mRlContent = findViewById(R.id.rl_content);
         mTvDeviceList = findViewById(R.id.tv_device_list);
+        mFrameLayout = findViewById(R.id.fl_container);
         mDeviceInfoBaseViewHolderBaseQuickAdapter = new BaseQuickAdapter<DeviceInfo, BaseViewHolder>(R.layout.item_device, deviceInfoList) {
             @SuppressLint("ClickableViewAccessibility")
             @Override
             protected void convert(@NonNull final BaseViewHolder helper, final DeviceInfo item) {
+                containers.add(helper.itemView);
                 helper.setText(R.id.tv_device_name, item.getName());
                 helper.addOnClickListener(R.id.tv_setting, R.id.tv_disconnect);
-
+                final ViewGroup constraintLayout = helper.getView(R.id.constraintLayout);
                 loginFlag = logonDDNSDeviceForVideo(item);
                 item.setLoginFlag(loginFlag);
                 mViews.add(helper.getView(R.id.iv_play));
-                MyApplication.sConstraintLayout = helper.getView(R.id.constraintLayout);
                 ChannelNum ddnsChannels = LogonUtil.getDDNSChannels(loginFlag);
                 LogUtils.d("loginFlag" + loginFlag);
                 LogUtils.d("ddnsChannels" + ddnsChannels.num);
                 helper.getView(R.id.tv_disconnect).setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        for (Integer playFlag : item.getPlayFlags()) {
-                            int ret = LogonUtil.stopPlay(playFlag);
-                            LogUtils.d("PlayFlag" + ret);
+                        LogonUtil.clearSelected((ViewGroup) helper.getView(R.id.constraintLayout));
+                        if (item.isPlaying()) {
+                            for (Integer playFlag : item.getPlayFlags()) {
+                                LogUtils.d("PlayFlag" + item.getPlayFlags());
+                                int ret = LogonUtil.stopPlay(playFlag);
+                            }
                         }
                         helper.setVisible(R.id.iv_play, true);
-                        clearSelected((ViewGroup) helper.getView(R.id.constraintLayout));
                     }
                 });
 
                 helper.getView(R.id.iv_play).setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        LogonUtil.stopAll(deviceInfoList, mViews);
+                        LogonUtil.clearSelected((ViewGroup) helper.getView(R.id.constraintLayout));
+                        stopOthers(deviceInfoList, mViews, (ConstraintLayout) helper.getView(R.id.constraintLayout), helper.getAdapterPosition());
                         helper.setVisible(R.id.iv_play, false);
                         helper.getView(R.id.constraintLayout).setClickable(true);
                         playAllRoute((ConstraintLayout) helper.getView(R.id.constraintLayout), item);
@@ -154,26 +169,41 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                 helper.getView(R.id.tv_more).setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        ((ViewGroup) helper.getView(R.id.rl_content)).removeView(helper.getView(R.id.constraintLayout));
-                        DeviceListActivity.this.restraintDevice = item;
-//                        stopAll(deviceInfoList, mViewGroups, mViews);
-                        helper.setVisible(R.id.iv_play, false);
-//                        logoff(item.getLoginFlag());
-                        Intent intent = new Intent(DeviceListActivity.this, DeviceDetailActivity.class);
-                        intent.putExtra("deviceInfo", item);
-                        Pair<View, String> pair = new Pair<>(helper.getView(R.id.constraintLayout), ViewCompat.getTransitionName(helper.getView(R.id.constraintLayout)));
-                        ActivityOptionsCompat activityOptionsCompat = ActivityOptionsCompat.makeSceneTransitionAnimation(DeviceListActivity.this, pair);
-                        ActivityCompat.startActivityForResult(DeviceListActivity.this, intent, 5000, activityOptionsCompat.toBundle());
+                        isOpen = true;
+                        LogonUtil.clearSelected((ViewGroup) helper.getView(R.id.constraintLayout));
+                        LogUtils.d("helper.getAdapterPosition()" + helper.getAdapterPosition());
+//                        stopOthers(deviceInfoList, mViews, (ConstraintLayout) helper.getView(R.id.constraintLayout), helper.getAdapterPosition());
+                        mRlContent.setVisibility(View.VISIBLE);
+                        canScrollVertically = false;
+                        int[] location = new int[2];
 
-//                        final View view = helper.getView(R.id.constraintLayout);
-//
-//                        int[] location = new int[2];
-//                        view.getLocationOnScreen(location);
-//                        LogUtils.d("location" + location[0]);
-//                        LogUtils.d("location" + location[1]);
-//                        LogUtils.d("getStatusBarheight"+LogonUtil.getStatusBarHeight(DeviceListActivity.this));
-//                        ObjectAnimator animator = ObjectAnimator.ofFloat(view, "translationY", -location[1]+ LogonUtil.getStatusBarHeight(DeviceListActivity.this));
-//                        animator.start();
+                        constraintLayout.getLocationOnScreen(location);
+                        LogUtils.d("location" + location[0]);
+                        LogUtils.d("location" + location[1]);
+                        int height = location[1] - LogonUtil.getStatusBarHeight(DeviceListActivity.this);
+                        LogUtils.d("getStatusBarheight" + LogonUtil.getStatusBarHeight(DeviceListActivity.this));
+                        mSurfaceViewObjectAnimator = ObjectAnimator.ofFloat(mRecyclerView, "translationY", -height);
+                        mSurfaceViewObjectAnimator.start();
+                        mTitleAlphaObjectAnimator = ObjectAnimator.ofFloat(mRlContent, "alpha", 1f, 0f);
+                        mTitleAlphaObjectAnimator.start();
+
+                        mFlAlphaObjectAnimator = ObjectAnimator.ofFloat(mFrameLayout, "alpha", 0.0f, 1.0f);
+                        mFlAlphaObjectAnimator.addListener(new AnimatorListenerAdapter() {
+                            @Override
+                            public void onAnimationStart(Animator animation) {
+                                super.onAnimationStart(animation);
+                                LogUtils.d("onAnimationStart");
+                                mFrameLayout.setVisibility(View.VISIBLE);
+                                addFragment();
+                            }
+
+                            @Override
+                            public void onAnimationEnd(Animator animation, boolean isReverse) {
+                                LogUtils.d("onAnimationEnd");
+                            }
+                        });
+                        mFlAlphaObjectAnimator.start();
+
                     }
                 });
 
@@ -198,20 +228,55 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                 }
             }
         });
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false) {
+            @Override
+            public boolean canScrollVertically() {
+                return canScrollVertically;
+            }
+        };
+        mRecyclerView.setLayoutManager(linearLayoutManager);
         mRecyclerView.setAdapter(mDeviceInfoBaseViewHolderBaseQuickAdapter);
         mDeviceInfoBaseViewHolderBaseQuickAdapter.addFooterView(View.inflate(this, R.layout.item_list_footer, null), 0);
+
     }
 
 
+    private void addFragment() {
+        LogUtils.d("addFragment");
+        mDeviceDetailFragment = new DeviceDetailFragment();
+        FragmentUtils.add(getSupportFragmentManager(), mDeviceDetailFragment, R.id.fl_container);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (isOpen) {
+            if (mSurfaceViewObjectAnimator != null) {
+                mSurfaceViewObjectAnimator.reverse();
+            }
+            if (mTitleAlphaObjectAnimator != null) {
+                mTitleAlphaObjectAnimator.reverse();
+            }
+            if (mFlAlphaObjectAnimator != null) {
+                mFlAlphaObjectAnimator.reverse();
+            }
+            isOpen = false;
+            canScrollVertically = true;
+            FragmentUtils.remove(mDeviceDetailFragment);
+        } else {
+            super.onBackPressed();
+        }
+
+
+    }
+
     private void playAllRoute(final ConstraintLayout viewGroup, final DeviceInfo deviceInfo) {
         final int childCount = viewGroup.getChildCount();
-        deviceInfo.getPlayFlags().clear();
         for (int i = 0; i < childCount; i++) {
             SurfaceView sView = (SurfaceView) viewGroup.getChildAt(i);
             int playFlag = LogonUtil.fillupSurfaceView(sView, deviceInfo.getLoginFlag(), i);
+            LogUtils.d("playFlag" + playFlag);
             deviceInfo.getPlayFlags().add(playFlag);
-//                    item.setPlayFlag();
+            deviceInfo.setPlaying(true);
             sView.setSelected(false);
 
             sView.setOnTouchListener(new DoubleClickListener(new DoubleClickListener.MyClickCallBack() {
@@ -306,6 +371,10 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
     @Override
     public void MainNotifyFun(int i, int i1, String s, int i2, Object o) {
         LogUtils.d("SDKMacro-------" + i1);
+        LogUtils.d("SDKMacro-------" + s);
+        LogUtils.d("SDKMacro-------" + i);
+        LogUtils.d("SDKMacro-------" + i2);
+        LogUtils.d("SDKMacro-------" + o);
         switch (i1) {
             case SDKMacro.EVENT_LOGIN_SUCCESS: // 登录成功
                 Toast.makeText(this, R.string.login_success,

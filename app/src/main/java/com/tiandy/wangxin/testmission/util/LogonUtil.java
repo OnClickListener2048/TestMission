@@ -2,6 +2,7 @@ package com.tiandy.wangxin.testmission.util;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.support.constraint.ConstraintLayout;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,7 +13,6 @@ import com.mobile.common.po.ChannelNum;
 import com.mobile.common.po.LogonHostInfo;
 import com.mobile.common.po.RealPlayInfo;
 import com.mobile.wiget.business.BusinessController;
-import com.tiandy.wangxin.testmission.MyApplication;
 import com.tiandy.wangxin.testmission.devicelist.bean.DeviceInfo;
 
 import java.util.ArrayList;
@@ -74,8 +74,8 @@ public class LogonUtil {
         return BusinessController.getInstance().sdkRealplayStop(playFlag);
     }
 
-    public static void stopAll(List<DeviceInfo> deviceInfoList, ArrayList<View> views) {
-        clearSelected(MyApplication.sConstraintLayout);
+    public static void stopAll(List<DeviceInfo> deviceInfoList, ArrayList<View> views, ConstraintLayout constraintLayout) {
+        clearSelected(constraintLayout);
         for (View view : views) {
             view.setVisibility(View.VISIBLE);
         }
@@ -87,10 +87,34 @@ public class LogonUtil {
         }
     }
 
+    public static void stopOthers(List<DeviceInfo> deviceInfoList, ArrayList<View> views, ConstraintLayout constraintLayout, int i) {
+        clearSelected(constraintLayout);
+        for (View view : views) {
+            int index = views.indexOf(view);
+            if (index != i) {
+                view.setVisibility(View.VISIBLE);
+            }
+
+        }
+        for (DeviceInfo deviceInfo : deviceInfoList) {
+            int index = deviceInfoList.indexOf(deviceInfo);
+            if (index != i) {
+                ArrayList<Integer> playFlags = deviceInfo.getPlayFlags();
+                for (Integer playFlag : playFlags) {
+                    stopPlay(playFlag);
+                }
+            }
+
+        }
+
+    }
+
     public static void clearSelected(ViewGroup viewGroup) {
-        viewGroup.setClickable(false);
+//        viewGroup.setClickable(false);
+//        viewGroup.setEnabled(false);
         int childCount = viewGroup.getChildCount();
         for (int i = 0; i < childCount; i++) {
+            viewGroup.setClickable(false);
             viewGroup.getChildAt(i).setSelected(false);
         }
     }
