@@ -9,6 +9,10 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.ActivityOptionsCompat;
+import android.support.v4.util.Pair;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.AppCompatImageView;
 import android.support.v7.widget.AppCompatTextView;
 import android.support.v7.widget.LinearLayoutManager;
@@ -34,6 +38,7 @@ import com.tiandy.wangxin.testmission.R;
 import com.tiandy.wangxin.testmission.adddevice.AddDeviceActivity;
 import com.tiandy.wangxin.testmission.base.BaseActivity;
 import com.tiandy.wangxin.testmission.dbhelper.DbGreenDAOHelper;
+import com.tiandy.wangxin.testmission.devicedetail.DeviceDetailActivity;
 import com.tiandy.wangxin.testmission.devicelist.bean.DeviceInfo;
 import com.tiandy.wangxin.testmission.devicelist.fragment.DeviceDetailFragment;
 import com.tiandy.wangxin.testmission.devicesetting.DeviceSettingActivity;
@@ -45,7 +50,9 @@ import java.util.List;
 
 import io.reactivex.functions.Consumer;
 
+import static com.tiandy.wangxin.testmission.util.LogonUtil.clearSelected;
 import static com.tiandy.wangxin.testmission.util.LogonUtil.logonDDNSDeviceForVideo;
+import static com.tiandy.wangxin.testmission.util.LogonUtil.stopAll;
 import static com.tiandy.wangxin.testmission.util.LogonUtil.stopOthers;
 
 public class DeviceListActivity extends BaseActivity implements DeviceListContract.IDeviceListView, BusinessController.MainNotifyListener {
@@ -60,6 +67,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
     List<DeviceInfo> deviceInfoList;
     ArrayList<View> mViews = new ArrayList<>();
     ArrayList<View> containers = new ArrayList<>();
+    ArrayList<ViewGroup> mViewGroups = new ArrayList<>();
     private BaseQuickAdapter<DeviceInfo, BaseViewHolder> mDeviceInfoBaseViewHolderBaseQuickAdapter;
     private AppCompatImageView mIvAddBig;
     /**
@@ -67,8 +75,6 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
      */
     private TextView mTvDeviceList;
     private int loginFlag;
-    private DeviceInfo restraintDevice;
-    private ConstraintLayout constraintLayout;
     private FrameLayout mFrameLayout;
     private boolean canScrollVertically = true;
     private RelativeLayout mRlContent;
@@ -102,22 +108,6 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
 
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        LogUtils.d("restraintDevice" + restraintDevice);
-//        if (restraintDevice != null) {
-//            loginFlag = logonDDNSDeviceForVideo(restraintDevice);
-//            playAllRoute(constraintLayout, restraintDevice);
-//        }
-    }
-
     @SuppressLint("ClickableViewAccessibility")
     private void initView() {
         mIvAddBig = findViewById(R.id.iv_add_big);
@@ -135,6 +125,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                 helper.setText(R.id.tv_device_name, item.getName());
                 helper.addOnClickListener(R.id.tv_setting, R.id.tv_disconnect);
                 final ViewGroup constraintLayout = helper.getView(R.id.constraintLayout);
+                mViewGroups.add(constraintLayout);
                 loginFlag = logonDDNSDeviceForVideo(item);
                 item.setLoginFlag(loginFlag);
                 mViews.add(helper.getView(R.id.iv_play));
@@ -144,7 +135,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                 helper.getView(R.id.tv_disconnect).setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        LogonUtil.clearSelected((ViewGroup) helper.getView(R.id.constraintLayout));
+                        LogonUtil.clearSelected(mViewGroups);
                         if (item.isPlaying()) {
                             for (Integer playFlag : item.getPlayFlags()) {
                                 LogUtils.d("PlayFlag" + item.getPlayFlags());
@@ -158,10 +149,9 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                 helper.getView(R.id.iv_play).setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        LogonUtil.clearSelected((ViewGroup) helper.getView(R.id.constraintLayout));
+                        LogonUtil.clearSelected(mViewGroups);
                         stopOthers(deviceInfoList, mViews, (ConstraintLayout) helper.getView(R.id.constraintLayout), helper.getAdapterPosition());
                         helper.setVisible(R.id.iv_play, false);
-                        helper.getView(R.id.constraintLayout).setClickable(true);
                         playAllRoute((ConstraintLayout) helper.getView(R.id.constraintLayout), item);
                     }
                 });
@@ -170,9 +160,8 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                     @Override
                     public void onClick(View v) {
                         isOpen = true;
-                        LogonUtil.clearSelected((ViewGroup) helper.getView(R.id.constraintLayout));
+                        LogonUtil.clearSelected(mViewGroups);
                         LogUtils.d("helper.getAdapterPosition()" + helper.getAdapterPosition());
-//                        stopOthers(deviceInfoList, mViews, (ConstraintLayout) helper.getView(R.id.constraintLayout), helper.getAdapterPosition());
                         mRlContent.setVisibility(View.VISIBLE);
                         canScrollVertically = false;
                         int[] location = new int[2];
@@ -204,6 +193,32 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                         });
                         mFlAlphaObjectAnimator.start();
 
+                    }
+                });
+
+                helper.getView(R.id.tv_flashback).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        int count = constraintLayout.getChildCount();
+                        int selectedRoute = -1;
+                        for (int i = 0; i < count; i++) {
+                            if (constraintLayout.getChildAt(i).isSelected()) {
+                                selectedRoute = i + 1;
+                            }
+                        }
+                        if (selectedRoute == -1) {
+                            return;
+                        }
+
+                        clearSelected(mViewGroups);
+                        stopAll(deviceInfoList, mViews, (ConstraintLayout) helper.getView(R.id.constraintLayout));
+
+                        Intent intent = new Intent(DeviceListActivity.this, DeviceDetailActivity.class);
+                        intent.putExtra("deviceInfo", item);
+                        intent.putExtra("selectedRoute", selectedRoute);
+                        Pair<View, String> pair = new Pair<>(helper.getView(R.id.constraintLayout), ViewCompat.getTransitionName(helper.getView(R.id.constraintLayout)));
+                        ActivityOptionsCompat activityOptionsCompat = ActivityOptionsCompat.makeSceneTransitionAnimation(DeviceListActivity.this, pair);
+                        ActivityCompat.startActivityForResult(DeviceListActivity.this, intent, 5000, activityOptionsCompat.toBundle());
                     }
                 });
 
@@ -370,11 +385,8 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
 
     @Override
     public void MainNotifyFun(int i, int i1, String s, int i2, Object o) {
-        LogUtils.d("SDKMacro-------" + i1);
-        LogUtils.d("SDKMacro-------" + s);
-        LogUtils.d("SDKMacro-------" + i);
-        LogUtils.d("SDKMacro-------" + i2);
-        LogUtils.d("SDKMacro-------" + o);
+        LogUtils.d("SDKMacro-i=" + i + "----i1=" + i1 + "----i2=" + i2);
+
         switch (i1) {
             case SDKMacro.EVENT_LOGIN_SUCCESS: // 登录成功
                 Toast.makeText(this, R.string.login_success,

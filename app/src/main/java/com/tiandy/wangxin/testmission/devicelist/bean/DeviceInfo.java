@@ -38,6 +38,8 @@ public class DeviceInfo implements Serializable {
     private int openRoute = -1;
     @Transient
     boolean isPlaying;
+    @Transient
+    private String uuid;
 
 
 
@@ -155,6 +157,14 @@ public class DeviceInfo implements Serializable {
 
     public void setPlaying(boolean playing) {
         isPlaying = playing;
+    }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
     }
 
     @Override

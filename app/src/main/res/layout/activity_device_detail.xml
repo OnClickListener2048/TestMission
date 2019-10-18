@@ -3,66 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical">
 
-    <android.support.constraint.ConstraintLayout
-        android:id="@+id/constraintLayout"
+    <SurfaceView
+        android:id="@+id/surfaceView"
         android:layout_width="match_parent"
         android:layout_height="208dp"
-        android:transitionName="@string/transitionName">
-
-        <SurfaceView
-            android:id="@+id/surfaceView1"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="@drawable/selector_surface_bg"
-            android:padding="1dp"
-            app:layout_constraintBottom_toTopOf="@id/surfaceView3"
-            app:layout_constraintHorizontal_weight="1"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toLeftOf="@id/surfaceView2"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_weight="1" />
-
-        <SurfaceView
-            android:id="@+id/surfaceView2"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="@drawable/selector_surface_bg"
-            android:padding="1dp"
-            app:layout_constraintBottom_toTopOf="@id/surfaceView4"
-            app:layout_constraintHorizontal_weight="1"
-            app:layout_constraintLeft_toRightOf="@id/surfaceView1"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_weight="1" />
-
-        <SurfaceView
-            android:id="@+id/surfaceView3"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="@drawable/selector_surface_bg"
-            android:padding="1dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintHorizontal_weight="1"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toLeftOf="@id/surfaceView4"
-            app:layout_constraintTop_toBottomOf="@id/surfaceView1"
-            app:layout_constraintVertical_weight="1" />
-
-        <SurfaceView
-            android:id="@+id/surfaceView4"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:background="@drawable/selector_surface_bg"
-            android:padding="1dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintHorizontal_weight="1"
-            app:layout_constraintLeft_toRightOf="@id/surfaceView3"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/surfaceView2"
-            app:layout_constraintVertical_weight="1" />
-    </android.support.constraint.ConstraintLayout>
+        android:transitionName="@string/transitionName" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -85,20 +33,6 @@
             android:layout_marginTop="5dp"
             android:background="#676767" />
 
-        <ImageView
-            android:id="@+id/iv_routes"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:scaleType="center"
-            android:src="@mipmap/separate_screen" />
-
-        <View
-            android:layout_width="0.5dp"
-            android:layout_height="match_parent"
-            android:layout_marginBottom="5dp"
-            android:layout_marginTop="5dp"
-            android:background="#676767" />
 
         <TextView
             android:id="@+id/tv_stream"
@@ -128,32 +62,33 @@
 
     </LinearLayout>
 
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/tv_date"
+            android:paddingTop="17dp"
+            android:paddingBottom="15dp"
+            tools:text="2019-09-09"
+            android:drawablePadding="3dp"
+            android:drawableLeft="@mipmap/calender"
+            android:layout_centerHorizontal="true"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </RelativeLayout>
+
+    <com.zjun.widget.TimeRuleView
+        android:id="@+id/timeRulerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="72dp"
         android:orientation="horizontal">
 
         <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_weight="1"
-            android:drawablePadding="3dp"
-            android:drawableTop="@mipmap/talk_remote"
-            android:gravity="center"
-            android:text="对讲" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_weight="1"
-            android:drawablePadding="3dp"
-            android:drawableTop="@mipmap/record"
-            android:gravity="center"
-            android:text="录像" />
-
-        <TextView
+            android:id="@+id/tv_capture"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
@@ -164,6 +99,19 @@
             android:text="抓拍" />
 
         <TextView
+            android:id="@+id/tv_record"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:drawablePadding="3dp"
+            android:drawableTop="@mipmap/record"
+            android:gravity="center"
+            android:text="录像" />
+
+
+        <TextView
+            android:id="@+id/tv_play_back"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
@@ -171,7 +119,41 @@
             android:drawablePadding="3dp"
             android:drawableTop="@mipmap/cloud_platform"
             android:gravity="center"
-            android:text="云台" />
+            android:text="快退" />
+
+
+        <TextView
+            android:id="@+id/tv_pause"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:drawablePadding="3dp"
+            android:drawableTop="@mipmap/talk_remote"
+            android:gravity="center"
+            android:text="暂停" />
+
+        <TextView
+            android:id="@+id/tv_play_forward"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:drawablePadding="3dp"
+            android:drawableTop="@mipmap/talk_remote"
+            android:gravity="center"
+            android:text="快进" />
+
+        <TextView
+            android:id="@+id/tv_single_frame"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:drawablePadding="3dp"
+            android:drawableTop="@mipmap/talk_remote"
+            android:gravity="center"
+            android:text="单帧步进" />
 
     </LinearLayout>
 

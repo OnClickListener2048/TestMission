@@ -10,6 +10,8 @@ import android.view.ViewGroup;
 import com.blankj.utilcode.util.LogUtils;
 import com.mobile.common.macro.SDKMacro;
 import com.mobile.common.po.ChannelNum;
+import com.mobile.common.po.Client_DVR_TIME;
+import com.mobile.common.po.HardPlayInfo;
 import com.mobile.common.po.LogonHostInfo;
 import com.mobile.common.po.RealPlayInfo;
 import com.mobile.wiget.business.BusinessController;
@@ -75,7 +77,6 @@ public class LogonUtil {
     }
 
     public static void stopAll(List<DeviceInfo> deviceInfoList, ArrayList<View> views, ConstraintLayout constraintLayout) {
-        clearSelected(constraintLayout);
         for (View view : views) {
             view.setVisibility(View.VISIBLE);
         }
@@ -88,7 +89,6 @@ public class LogonUtil {
     }
 
     public static void stopOthers(List<DeviceInfo> deviceInfoList, ArrayList<View> views, ConstraintLayout constraintLayout, int i) {
-        clearSelected(constraintLayout);
         for (View view : views) {
             int index = views.indexOf(view);
             if (index != i) {
@@ -109,14 +109,16 @@ public class LogonUtil {
 
     }
 
-    public static void clearSelected(ViewGroup viewGroup) {
+    public static void clearSelected(ArrayList<ViewGroup> viewGroups) {
 //        viewGroup.setClickable(false);
 //        viewGroup.setEnabled(false);
-        int childCount = viewGroup.getChildCount();
-        for (int i = 0; i < childCount; i++) {
-            viewGroup.setClickable(false);
-            viewGroup.getChildAt(i).setSelected(false);
+        for (ViewGroup group : viewGroups) {
+            int childCount = group.getChildCount();
+            for (int i = 0; i < childCount; i++) {
+                group.getChildAt(i).setSelected(false);
+            }
         }
+
     }
 
     public static void logoff(int logonFd) {
@@ -139,10 +141,40 @@ public class LogonUtil {
         UUID uuid = UUID.randomUUID();
         String str = uuid.toString();
         String uuidStr = str.replace("-", "");
-
+        deviceInfo.setUuid(uuidStr);
         return BusinessController.getInstance().sdkLogonHostByType(
                 uuidStr, 1, logonInfo);
 
+    }
+
+
+    public static int playBack(DeviceInfo deviceInfo, String startTime, String endTime, int channelNum, SurfaceView surfaceView) {
+        LogUtils.d("startTime=" + startTime);
+        LogUtils.d("endTime=" + endTime);
+        if (startTime == null || endTime == null) {
+            return 0;
+        }
+        HardPlayInfo info = new HardPlayInfo();
+        info.filename = "";
+        info.factory_index = SDKMacro.SOFT_DECODER;
+        info.m_iChannel = channelNum;
+        info.m_iDecodeType = SDKMacro.SOFT_DECODER;
+        Client_DVR_TIME starTime = new Client_DVR_TIME(startTime);
+        Client_DVR_TIME stopTime = new Client_DVR_TIME(endTime);
+        info.m_iStarttime = starTime;
+        info.m_iStoptime = stopTime;
+        info.m_iType = 1; // 按时间回放
+        info.m_lHwnd = surfaceView.getId();
+        info.m_iAlarmType = 0;    //0:定时录像； 4:报警录像；
+        info.m_iVideoQuality = 0;
+        info.m_iRetransmit = SDKMacro.PLAYBACK_RETRANSMIT_OFF;
+        info.m_iStreamType = 0;
+        info.deviceId = deviceInfo.getUuid();
+        return BusinessController.getInstance().sdkHardplayStart(deviceInfo.getLoginFlag(), info, surfaceView);
+    }
+
+    public static int playBackStop(int playFd) {
+        return BusinessController.getInstance().sdkHardplayStop(playFd);
     }
 
 
