@@ -1,16 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical">
 
-    <SurfaceView
-        android:id="@+id/surfaceView"
+    <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="208dp"
-        android:transitionName="@string/transitionName" />
+        android:layout_height="wrap_content">
+
+        <SurfaceView
+            android:id="@+id/surfaceView"
+            android:layout_width="match_parent"
+            android:layout_height="208dp"
+            android:transitionName="@string/transitionName" />
+
+        <ImageView
+            android:onClick="onBackClick"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="15dp"
+            android:src="@mipmap/back_white" />
+    </RelativeLayout>
+
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -65,22 +78,24 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
+
         <TextView
             android:id="@+id/tv_date"
-            android:paddingTop="17dp"
-            android:paddingBottom="15dp"
-            tools:text="2019-09-09"
-            android:drawablePadding="3dp"
-            android:drawableLeft="@mipmap/calender"
-            android:layout_centerHorizontal="true"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:drawableLeft="@mipmap/calender"
+            android:drawablePadding="3dp"
+            android:paddingBottom="15dp"
+            android:paddingTop="17dp"
+            tools:text="2019-09-09" />
     </RelativeLayout>
 
-    <com.zjun.widget.TimeRuleView
+    <com.zjun.widget.TimeRuleView xmlns:app="http://schemas.android.com/apk/res-auto"
         android:id="@+id/timeRulerView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        app:trv_partColor="@color/bg_green" />
 
     <LinearLayout
         android:layout_width="match_parent"

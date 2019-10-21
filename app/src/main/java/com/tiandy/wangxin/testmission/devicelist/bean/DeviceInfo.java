@@ -26,7 +26,7 @@ public class DeviceInfo implements Serializable {
     private String port;
     private String userName;
     private String password;
-
+    private int channelNum;
     @Transient
     private int loginFlag;
     @Transient
@@ -43,9 +43,10 @@ public class DeviceInfo implements Serializable {
 
 
 
-    @Generated(hash = 1064820139)
+
+    @Generated(hash = 1269205985)
     public DeviceInfo(Long id, String key, String ip, String name, String port,
-                      String userName, String password) {
+            String userName, String password, int channelNum) {
         this.id = id;
         this.key = key;
         this.ip = ip;
@@ -53,6 +54,7 @@ public class DeviceInfo implements Serializable {
         this.port = port;
         this.userName = userName;
         this.password = password;
+        this.channelNum = channelNum;
     }
 
     @Generated(hash = 2125166935)
@@ -165,6 +167,14 @@ public class DeviceInfo implements Serializable {
 
     public void setUuid(String uuid) {
         this.uuid = uuid;
+    }
+
+    public int getChannelNum() {
+        return channelNum;
+    }
+
+    public void setChannelNum(int channelNum) {
+        this.channelNum = channelNum;
     }
 
     @Override

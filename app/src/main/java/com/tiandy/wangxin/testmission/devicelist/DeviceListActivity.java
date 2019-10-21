@@ -83,6 +83,9 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
     private ObjectAnimator mTitleAlphaObjectAnimator;
     private ObjectAnimator mFlAlphaObjectAnimator;
     private DeviceDetailFragment mDeviceDetailFragment;
+    private ConstraintLayout replayConstraintLayout;
+    private DeviceInfo replayDevice;
+    private View playButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -130,6 +133,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                 item.setLoginFlag(loginFlag);
                 mViews.add(helper.getView(R.id.iv_play));
                 ChannelNum ddnsChannels = LogonUtil.getDDNSChannels(loginFlag);
+                item.setChannelNum(ddnsChannels.num);
                 LogUtils.d("loginFlag" + loginFlag);
                 LogUtils.d("ddnsChannels" + ddnsChannels.num);
                 helper.getView(R.id.tv_disconnect).setOnClickListener(new View.OnClickListener() {
@@ -152,6 +156,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                         LogonUtil.clearSelected(mViewGroups);
                         stopOthers(deviceInfoList, mViews, (ConstraintLayout) helper.getView(R.id.constraintLayout), helper.getAdapterPosition());
                         helper.setVisible(R.id.iv_play, false);
+                        DeviceListActivity.this.playButton = helper.getView(R.id.iv_play);
                         playAllRoute((ConstraintLayout) helper.getView(R.id.constraintLayout), item);
                     }
                 });
@@ -165,7 +170,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                         mRlContent.setVisibility(View.VISIBLE);
                         canScrollVertically = false;
                         int[] location = new int[2];
-
+                        DeviceListActivity.this.playButton = helper.getView(R.id.iv_play);
                         constraintLayout.getLocationOnScreen(location);
                         LogUtils.d("location" + location[0]);
                         LogUtils.d("location" + location[1]);
@@ -212,7 +217,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
 
                         clearSelected(mViewGroups);
                         stopAll(deviceInfoList, mViews, (ConstraintLayout) helper.getView(R.id.constraintLayout));
-
+                        DeviceListActivity.this.playButton = helper.getView(R.id.iv_play);
                         Intent intent = new Intent(DeviceListActivity.this, DeviceDetailActivity.class);
                         intent.putExtra("deviceInfo", item);
                         intent.putExtra("selectedRoute", selectedRoute);
@@ -224,6 +229,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
 
                 if (helper.getAdapterPosition() == 0) {
                     helper.setVisible(R.id.iv_play, false);
+                    DeviceListActivity.this.playButton = helper.getView(R.id.iv_play);
                     helper.getView(R.id.constraintLayout).setClickable(true);
                     playAllRoute((ConstraintLayout) helper.getView(R.id.constraintLayout), item);
                 }
@@ -235,7 +241,6 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                 switch (view.getId()) {
                     case R.id.tv_setting:
                         Intent bundle = new Intent();
-                        bundle.putExtra("deviceInfo", deviceInfoList.get(position));
                         bundle.putExtra("deviceInfo", deviceInfoList.get(position));
                         bundle.setClass(DeviceListActivity.this, DeviceSettingActivity.class);
                         startActivityForResult(bundle, 4000);
@@ -285,6 +290,8 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
     }
 
     private void playAllRoute(final ConstraintLayout viewGroup, final DeviceInfo deviceInfo) {
+        this.replayConstraintLayout = viewGroup;
+        this.replayDevice = deviceInfo;
         final int childCount = viewGroup.getChildCount();
         for (int i = 0; i < childCount; i++) {
             SurfaceView sView = (SurfaceView) viewGroup.getChildAt(i);
@@ -381,6 +388,15 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
         }
 
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (replayConstraintLayout != null && replayDevice != null) {
+            playAllRoute(replayConstraintLayout, replayDevice);
+            playButton.setVisibility(View.GONE);
+        }
     }
 
     @Override

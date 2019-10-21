@@ -11,4 +11,5 @@
     <color name="textc">#333333</color>
     <color name="bg_normal">#F6F6F6</color>
     <color name="bg_green">#6BD128</color>
+    <color name="bg_alpha_green">#996BD128</color>
 </resources>

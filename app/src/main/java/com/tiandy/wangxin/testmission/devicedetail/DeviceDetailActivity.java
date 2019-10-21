@@ -34,6 +34,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 
@@ -88,7 +89,8 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
     private String mNowMinus;
     private String mNowSeconds;
     private String YMD;
-    private long mMillis;
+    private long mMillis = System.currentTimeMillis();
+    private String mEndTime = timeStamp2Date(System.currentTimeMillis());
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -116,19 +118,40 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
 
 
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
-        ArrayList<String> arrayList = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            arrayList.add(String.valueOf(i + 1));
-        }
-        mRecyclerView.setAdapter(new BaseQuickAdapter<String, BaseViewHolder>(R.layout.item_route, arrayList) {
-            @Override
-            protected void convert(@NonNull BaseViewHolder helper, String item) {
+        final List<RoutePlayStatus> routePlayStatuses = new ArrayList<>();
+        for (int i = 1; i <= mDeviceInfo.getChannelNum(); i++) {
+            RoutePlayStatus routePlayStatus = new RoutePlayStatus();
+            routePlayStatus.setRouteName("通道" + i);
 
+            routePlayStatus.setRoute(i);
+            if (mSelectedRoute == i) {
+                routePlayStatus.setPlaying(true);
+            }
+
+            routePlayStatuses.add(routePlayStatus);
+        }
+        mRecyclerView.setAdapter(new BaseQuickAdapter<RoutePlayStatus, BaseViewHolder>(R.layout.item_route, routePlayStatuses) {
+            @Override
+            protected void convert(@NonNull BaseViewHolder helper, final RoutePlayStatus item) {
+                helper.setText(R.id.tv_device_name, item.getRouteName()).setImageResource(R.id.tv_src, item.isPlaying ? R.mipmap.photo : 0);
+                helper.itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        for (RoutePlayStatus routePlayStatus : routePlayStatuses) {
+                            routePlayStatus.setPlaying(false);
+                        }
+                        item.setPlaying(true);
+                        notifyDataSetChanged();
+                        mSelectedRoute = item.getRoute();
+                        play(false);
+                    }
+                });
             }
         });
 
 
     }
+
 
     private void initView() {
 
@@ -176,7 +199,9 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
             public void onTimeChanged(int newTimeValue) {
                 DeviceDetailActivity.this.newTimeValue = newTimeValue;
                 getStartTime();
+                getEndTime();
                 LogUtils.d("mStartTime" + mStartTime);
+                LogUtils.d("mStartTime" + mEndTime);
             }
 
             @Override
@@ -188,43 +213,55 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
                     if (mStartTime == null) {
                         return;
                     }
-
-                    play();
-
-                    TimeRuleView.TimePart timePart = new TimeRuleView.TimePart();
-                    timePart.endTime = newTimeValue + 60 * 60;
-
-                    getNowHMS();
-                    int sTime = getSTime(mNowHours, mNowMinus, mNowSeconds);
-                    if (timePart.endTime > sTime && System.currentTimeMillis() - mMillis > 12 * 60 * 60 * 1000) {
-                        timePart.endTime = sTime;
-                    }
-                    timePart.startTime = newTimeValue - 3600;
-                    mTimeParts.add(timePart);
-                    mTimeRulerView.setTimePartList(mTimeParts);
+                    play(false);
                 }
             }
         });
         mPlayBack = LogonUtil.playBack(mDeviceInfo
                 , mStartTime
-                , timeStamp2Date(System.currentTimeMillis())
+                , mEndTime
                 , mSelectedRoute
                 , mSurfaceView);
 
     }
 
-    private void play() {
+    private void play(boolean anotherDay) {
+        if (anotherDay) {
+            mTimeParts.clear();
+        }
+        TimeRuleView.TimePart timePart = new TimeRuleView.TimePart();
+        timePart.endTime = newTimeValue + 60 * 60;
+
+        getNowHMS();
+        int sTime = getSTime(mNowHours, mNowMinus, mNowSeconds);
+        LogUtils.d("endTimemillis=" + timePart.endTime);
+        LogUtils.d("nowTimemillis=" + sTime);
+        if (timePart.endTime > sTime && TimeUtils.isToday(mMillis)) {
+            timePart.endTime = sTime;
+        }
+
+        timePart.startTime = newTimeValue - 3600;
+        mTimeParts.add(timePart);
+        mTimeRulerView.setTimePartList(mTimeParts);
         int ret = LogonUtil.playBackStop(mPlayBack);
         LogUtils.d("ret" + ret);
         mPlayBack = LogonUtil.playBack(mDeviceInfo
                 , mStartTime
-                , timeStamp2Date(System.currentTimeMillis())
+                , mEndTime
                 , mSelectedRoute
                 , mSurfaceView);
+
+
+
+        LogUtils.d("mPlayBack" + mPlayBack+"----mSelectedRoute="+mSelectedRoute);
     }
 
     private void getStartTime() {
         mStartTime = YMD + " " + TimeRuleView.formatTimeHHmmss(DeviceDetailActivity.this.newTimeValue);
+    }
+
+    private void getEndTime() {
+        mEndTime = YMD + " " + TimeRuleView.formatTimeHHmmss(DeviceDetailActivity.this.newTimeValue + 3600);
     }
 
     private void getNowHMS() {
@@ -287,7 +324,8 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
                         mTvDate.setText(timeStampDate(mMillis));
                         YMD = timeStampDate(mMillis);
                         getStartTime();
-                        play();
+                        getEndTime();
+                        play(true);
 
                     }
                 });
@@ -356,11 +394,11 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
         super.onDestroy();
         int ret = LogonUtil.playBackStop(mPlayBack);
         LogUtils.d("onDestroy");
-        ArrayList<Integer> playFlags = mDeviceInfo.getPlayFlags();
-        for (Integer playFlag : playFlags) {
-            LogonUtil.stopPlay(playFlag);
-        }
-        LogonUtil.logoff(mDeviceInfo.getLoginFlag());
+//        ArrayList<Integer> playFlags = mDeviceInfo.getPlayFlags();
+//        for (Integer playFlag : playFlags) {
+//            LogonUtil.stopPlay(playFlag);
+//        }
+//        LogonUtil.logoff(mDeviceInfo.getLoginFlag());
 
     }
 
@@ -406,6 +444,44 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
 //        mTime = TimeUtils.date2Millis(time.getTime());//随时更新时间
 //        mRulerView.setCurrentTimeMillis(mTime);
 
+    }
+
+    public void onBackClick(View view) {
+        super.onBackPressed();
+    }
+
+
+    public static class RoutePlayStatus {
+
+        private String routeName;
+
+        private int route;
+
+        private boolean isPlaying;
+
+        public boolean isPlaying() {
+            return isPlaying;
+        }
+
+        public void setPlaying(boolean playing) {
+            isPlaying = playing;
+        }
+
+        public String getRouteName() {
+            return routeName;
+        }
+
+        public void setRouteName(String routeName) {
+            this.routeName = routeName;
+        }
+
+        public int getRoute() {
+            return route;
+        }
+
+        public void setRoute(int route) {
+            this.route = route;
+        }
     }
 
 

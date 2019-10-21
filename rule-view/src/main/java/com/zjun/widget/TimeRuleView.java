@@ -540,17 +540,17 @@ public class TimeRuleView extends View {
         // 指针
         mPaint.setColor(indicatorColor);
         mPaint.setStrokeWidth(indicatorWidth);
-        canvas.drawLine(mHalfWidth, 0, mHalfWidth, mHeight, mPaint);
+        canvas.drawLine(mHalfWidth, -40, mHalfWidth, mHeight, mPaint);
 
         // 正三角形
-        if (mTrianglePath.isEmpty()) {
-            //
-            final float halfSideLen = indicatorTriangleSideLen * .5f;
-            mTrianglePath.moveTo(mHalfWidth - halfSideLen, 0);
-            mTrianglePath.rLineTo(indicatorTriangleSideLen, 0);
-            mTrianglePath.rLineTo(-halfSideLen, (float) (Math.sin(Math.toRadians(60)) * halfSideLen));
-            mTrianglePath.close();
-        }
+//        if (mTrianglePath.isEmpty()) {
+//            //
+//            final float halfSideLen = indicatorTriangleSideLen * .5f;
+//            mTrianglePath.moveTo(mHalfWidth - halfSideLen, 0);
+//            mTrianglePath.rLineTo(indicatorTriangleSideLen, 0);
+//            mTrianglePath.rLineTo(-halfSideLen, (float) (Math.sin(Math.toRadians(60)) * halfSideLen));
+//            mTrianglePath.close();
+//        }
         mPaint.setStrokeWidth(1);
         mPaint.setStyle(Paint.Style.FILL);
         canvas.drawPath(mTrianglePath, mPaint);
