@@ -38,6 +38,7 @@ import com.tiandy.wangxin.testmission.R;
 import com.tiandy.wangxin.testmission.adddevice.AddDeviceActivity;
 import com.tiandy.wangxin.testmission.base.BaseActivity;
 import com.tiandy.wangxin.testmission.dbhelper.DbGreenDAOHelper;
+import com.tiandy.wangxin.testmission.devicedetail.AnimatorActivity;
 import com.tiandy.wangxin.testmission.devicedetail.DeviceDetailActivity;
 import com.tiandy.wangxin.testmission.devicelist.bean.DeviceInfo;
 import com.tiandy.wangxin.testmission.devicelist.fragment.DeviceDetailFragment;
@@ -124,6 +125,7 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
             @SuppressLint("ClickableViewAccessibility")
             @Override
             protected void convert(@NonNull final BaseViewHolder helper, final DeviceInfo item) {
+                LogUtils.d("convert");
                 containers.add(helper.itemView);
                 helper.setText(R.id.tv_device_name, item.getName());
                 helper.addOnClickListener(R.id.tv_setting, R.id.tv_disconnect);
@@ -158,8 +160,10 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
                         helper.setVisible(R.id.iv_play, false);
                         DeviceListActivity.this.playButton = helper.getView(R.id.iv_play);
                         playAllRoute((ConstraintLayout) helper.getView(R.id.constraintLayout), item);
+
                     }
                 });
+
 
                 helper.getView(R.id.tv_more).setOnClickListener(new View.OnClickListener() {
                     @Override
@@ -260,6 +264,12 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
 
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        clearSelected(mViewGroups);
+        stopAll(deviceInfoList, mViews, replayConstraintLayout);
+    }
 
     private void addFragment() {
         LogUtils.d("addFragment");
@@ -343,16 +353,15 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
     @Override
     public void refreshList(List<DeviceInfo> deviceInfoList) {
         this.deviceInfoList = deviceInfoList;
-        if (deviceInfoList != null && deviceInfoList.size() != 0) {
+        mDeviceInfoBaseViewHolderBaseQuickAdapter.setNewData(deviceInfoList);
+        if (deviceInfoList.size() != 0) {
             mRecyclerView.setVisibility(View.VISIBLE);
-            mDeviceInfoBaseViewHolderBaseQuickAdapter.setNewData(deviceInfoList);
             mIvAddBig.setVisibility(View.GONE);
             mTvAddDevice.setVisibility(View.GONE);
             mTvDeviceList.setVisibility(View.VISIBLE);
         } else {
             mIvAddBig.setVisibility(View.VISIBLE);
             mTvAddDevice.setVisibility(View.VISIBLE);
-            mDeviceInfoBaseViewHolderBaseQuickAdapter.setNewData(null);
             mTvDeviceList.setVisibility(View.GONE);
             mRecyclerView.setVisibility(View.GONE);
 //            mDeviceInfoBaseViewHolderBaseQuickAdapter.removeAllHeaderView();
@@ -370,6 +379,19 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 1000 && resultCode == RESULT_OK) {
+            mRecyclerView.setVisibility(View.VISIBLE);
+            DeviceInfo deviceInfo = (DeviceInfo) data.getSerializableExtra("deviceInfo");
+            deviceInfoList.add(deviceInfo);
+            mDeviceInfoBaseViewHolderBaseQuickAdapter.notifyItemInserted(deviceInfoList.size());
+            return;
+        }
+
+        if (requestCode == 4000 && resultCode == RESULT_OK) {
+
+
+        }
         if (requestCode == 5000) {
 //            restraintDevice = (DeviceInfo) data.getSerializableExtra("deviceInfo");
 //            LogUtils.d("restraintDevice" + restraintDevice);
@@ -394,10 +416,12 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
     protected void onResume() {
         super.onResume();
         if (replayConstraintLayout != null && replayDevice != null) {
+            LogUtils.d("onResume");
             playAllRoute(replayConstraintLayout, replayDevice);
             playButton.setVisibility(View.GONE);
         }
     }
+
 
     @Override
     public void MainNotifyFun(int i, int i1, String s, int i2, Object o) {
@@ -461,5 +485,9 @@ public class DeviceListActivity extends BaseActivity implements DeviceListContra
             LogonUtil.logoff(deviceInfo.getLoginFlag());
         }
 
+    }
+
+    public void onAnimatorSetClick(View view) {
+        ActivityUtils.startActivity(AnimatorActivity.class);
     }
 }

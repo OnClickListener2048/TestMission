@@ -7,14 +7,12 @@ import android.view.View;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.blankj.utilcode.util.ActivityUtils;
 import com.blankj.utilcode.util.ToastUtils;
 import com.tiandy.wangxin.testmission.R;
 import com.tiandy.wangxin.testmission.base.BaseActivity;
 import com.tiandy.wangxin.testmission.devicelist.bean.DeviceInfo;
 import com.tiandy.wangxin.testmission.modifydeivce.DeviceModifyActivity;
-
-import java.io.Serializable;
+import com.tiandy.wangxin.testmission.util.LogonUtil;
 
 /**
  * Created by wangxin on 2019/10/12 yeah.
@@ -73,6 +71,7 @@ public class DeviceSettingActivity extends BaseActivity implements DeviceSetting
     @Override
     public void deleteDeviceSuccess() {
         ToastUtils.showShort("删除设备成功");
+        LogonUtil.logoff(mDeviceInfo.getLoginFlag());
         setResult(RESULT_OK);
         finish();
     }

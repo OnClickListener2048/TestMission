@@ -13,7 +13,7 @@ public interface AddDeviceContract {
     }
 
     interface IAddDeviceView{
-        void addDeviceSuccess();
+        void addDeviceSuccess(DeviceInfo deviceInfo);
 
         void addDeviceFail();
 
@@ -24,7 +24,7 @@ public interface AddDeviceContract {
 
         void addDevice(DeviceInfo deviceInfo);
 
-        void addDeviceSuccess();
+        void addDeviceSuccess(DeviceInfo deviceInfo);
 
         void addDeviceFail();
 

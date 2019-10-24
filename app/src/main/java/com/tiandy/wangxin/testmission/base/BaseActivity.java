@@ -13,7 +13,9 @@ import com.jaeger.library.StatusBarUtil;
  * Created by wangxin on 2019/10/14 yeah.
  */
 
-public class BaseActivity extends AppCompatActivity {
+public class BaseActivity extends AppCompatActivity  {
+
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

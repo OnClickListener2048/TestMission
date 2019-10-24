@@ -20,7 +20,7 @@ public class AddDeviceModel implements AddDeviceContract.IAddDeviceModel {
     public void addDevice(DeviceInfo deviceInfo) {
         try {
             DbGreenDAOHelper.getInstance().addDevice(deviceInfo);
-            addDevicePresenter.addDeviceSuccess();
+            addDevicePresenter.addDeviceSuccess(deviceInfo);
         }catch (DuplicatedInsertException d){
             addDevicePresenter.addDeviceDuplicated();
         }catch (Exception e) {

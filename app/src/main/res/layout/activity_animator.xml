@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <EditText
+        android:id="@+id/et_duration"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:hint="动画时长"
+        android:layout_margin="20dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <RadioGroup
+        android:layout_margin="20dp"
+        android:id="@+id/rb"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/et_duration">
+
+        <RadioButton
+            android:id="@+id/together"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="同时播放" />
+
+        <RadioButton
+            android:id="@+id/sequential"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="顺序播放" />
+    </RadioGroup>
+</android.support.constraint.ConstraintLayout>

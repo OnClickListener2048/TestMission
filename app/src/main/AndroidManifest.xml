@@ -57,6 +57,7 @@
         <activity android:name=".modifydeivce.DeviceModifyActivity" />
         <activity android:name=".devicesetting.DeviceSettingActivity" />
         <activity android:name=".devicedetail.DeviceDetailActivity" />
+        <activity android:name=".devicedetail.AnimatorActivity" />
     </application>
 
 </manifest>

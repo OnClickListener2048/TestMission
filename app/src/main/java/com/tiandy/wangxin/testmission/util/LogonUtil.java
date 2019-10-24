@@ -26,6 +26,9 @@ import java.util.UUID;
  */
 
 public class LogonUtil {
+
+    private static int sFindFileFd;
+
     /**
      * @Title: getDDNSChannels
      * @Description: 获取设备（DDNS）通道个数,初始化（DDNS）通道信息
@@ -80,12 +83,15 @@ public class LogonUtil {
         for (View view : views) {
             view.setVisibility(View.VISIBLE);
         }
-        for (DeviceInfo deviceInfo : deviceInfoList) {
-            ArrayList<Integer> playFlags = deviceInfo.getPlayFlags();
-            for (Integer playFlag : playFlags) {
-                stopPlay(playFlag);
+        if (deviceInfoList!=null) {
+            for (DeviceInfo deviceInfo : deviceInfoList) {
+                ArrayList<Integer> playFlags = deviceInfo.getPlayFlags();
+                for (Integer playFlag : playFlags) {
+                    stopPlay(playFlag);
+                }
             }
         }
+
     }
 
     public static void stopOthers(List<DeviceInfo> deviceInfoList, ArrayList<View> views, ConstraintLayout constraintLayout, int i) {
@@ -127,7 +133,6 @@ public class LogonUtil {
 
 
     public static int logonDDNSDeviceForVideo(DeviceInfo deviceInfo) {
-
         LogonHostInfo logonInfo = new LogonHostInfo();
         logonInfo.type = 1;
         logonInfo.account_name = "admin";
@@ -148,9 +153,10 @@ public class LogonUtil {
     }
 
 
-    public static int playBack(DeviceInfo deviceInfo, String startTime, String endTime, int channelNum, SurfaceView surfaceView) {
+    public static int playBack(DeviceInfo deviceInfo, String startTime, String endTime, int channelNum, SurfaceView surfaceView,Object o) {
         LogUtils.d("startTime=" + startTime);
         LogUtils.d("endTime=" + endTime);
+
         if (startTime == null || endTime == null) {
             return 0;
         }
@@ -170,6 +176,21 @@ public class LogonUtil {
         info.m_iRetransmit = SDKMacro.PLAYBACK_RETRANSMIT_OFF;
         info.m_iStreamType = 0;
         info.deviceId = deviceInfo.getUuid();
+
+
+        if (sFindFileFd != -1) {
+            BusinessController.getInstance().stopTask(sFindFileFd);
+        }
+
+        sFindFileFd = BusinessController.getInstance()
+                .sdkFindFile(deviceInfo.getLoginFlag(), channelNum, 0, null, starTime, stopTime, o);
+
+        if (BusinessController.getInstance().startTask(sFindFileFd) != 0) {
+            return -1;
+        }
+
+
+
         return BusinessController.getInstance().sdkHardplayStart(deviceInfo.getLoginFlag(), info, surfaceView);
     }
 

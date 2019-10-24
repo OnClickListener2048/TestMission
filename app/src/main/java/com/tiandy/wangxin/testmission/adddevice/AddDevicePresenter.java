@@ -21,8 +21,8 @@ public class AddDevicePresenter implements AddDeviceContract.IAddDevicePresenter
     }
 
     @Override
-    public void addDeviceSuccess() {
-        iAddDeviceView.addDeviceSuccess();
+    public void addDeviceSuccess(DeviceInfo deviceInfo) {
+        iAddDeviceView.addDeviceSuccess(deviceInfo);
     }
 
     @Override

@@ -2,36 +2,45 @@ package com.tiandy.wangxin.testmission.devicedetail;
 
 import android.app.DatePickerDialog;
 import android.content.DialogInterface;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.transition.ChangeBounds;
-import android.transition.ChangeTransform;
-import android.transition.Fade;
+import android.transition.AutoTransition;
 import android.transition.TransitionSet;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.DatePicker;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.blankj.utilcode.util.ColorUtils;
 import com.blankj.utilcode.util.LogUtils;
+import com.blankj.utilcode.util.StringUtils;
 import com.blankj.utilcode.util.TimeUtils;
+import com.blankj.utilcode.util.ToastUtils;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.BaseViewHolder;
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.mobile.common.macro.SDKMacro;
 import com.mobile.wiget.business.BusinessController;
+import com.mobile.wiget.business.MessageCallBackController;
+import com.tiandy.wangxin.testmission.MyApplication;
 import com.tiandy.wangxin.testmission.R;
 import com.tiandy.wangxin.testmission.base.BaseActivity;
 import com.tiandy.wangxin.testmission.devicelist.bean.DeviceInfo;
+import com.tiandy.wangxin.testmission.devicelist.bean.Replay;
 import com.tiandy.wangxin.testmission.util.LogonUtil;
 import com.zjun.widget.TimeRuleView;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -42,7 +51,7 @@ import java.util.Locale;
  * Created by wangxin on 2019/10/15 yeah.
  */
 
-public class DeviceDetailActivity extends BaseActivity implements BusinessController.MainNotifyListener, View.OnClickListener {
+public class DeviceDetailActivity extends BaseActivity implements BusinessController.MainNotifyListener, View.OnClickListener, MessageCallBackController.MessageCallBackControllerListener {
     private static final ThreadLocal<SimpleDateFormat> SDF_THREAD_LOCAL = new ThreadLocal<>();
     private ImageView mTvVolume;
     private ImageView mIvRoutes;
@@ -91,31 +100,49 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
     private String YMD;
     private long mMillis = System.currentTimeMillis();
     private String mEndTime = timeStamp2Date(System.currentTimeMillis());
+    private int mPlayBackStop = -1;
+    private MessageCallBackController messageCallBack;
+    private RelativeLayout transition_layout;
+    private View mView;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_device_detail);
+        BusinessController.getInstance().setMainNotifyListener(this);// 注册主回调
+        messageCallBack = new MessageCallBackController(this);
         initView();
 
-        BusinessController.getInstance().setMainNotifyListener(this);// 注册主回调
+
         /**
          * 2、设置WindowTransition,除指定的ShareElement外，其它所有View都会执行这个Transition动画
          */
-        getWindow().setEnterTransition(new Fade());
-        getWindow().setExitTransition(new Fade());
-
+        TransitionSet transitionSetEnterTransition = new TransitionSet();
+        transitionSetEnterTransition.addTransition(new AutoTransition());
+        TransitionSet autoTransition = new AutoTransition();
+        autoTransition.setStartDelay(MyApplication.duration);
+        getWindow().setEnterTransition(autoTransition.setDuration(MyApplication.duration));
+        getWindow().setExitTransition(autoTransition.setDuration(MyApplication.duration));
 
         /**
          * 3、设置ShareElementTransition,指定的ShareElement会执行这个Transiton动画
          */
         TransitionSet transitionSet = new TransitionSet();
-        transitionSet.addTransition(new ChangeBounds());
-        transitionSet.addTransition(new ChangeTransform());
-        transitionSet.addTarget(mSurfaceView);
-        getWindow().setSharedElementEnterTransition(transitionSet);
-        getWindow().setSharedElementExitTransition(transitionSet);
+        transitionSet.addTransition(new FlipTransition()).addTransition(new AutoTransition());
+        transitionSet.setOrdering(MyApplication.order);
+        transitionSet.setDuration(MyApplication.duration);
+        transitionSet.addTarget(mView);
 
+
+        TransitionSet transitionSet2 = new TransitionSet()
+                .addTarget(mView)
+                .addTransition(new FlipTransition2())
+                .addTransition(new AutoTransition())
+                .setOrdering(MyApplication.order)
+                .setDuration(MyApplication.duration);
+        getWindow().setSharedElementEnterTransition(transitionSet);
+        getWindow().setSharedElementReturnTransition(transitionSet2);
+//        getWindow().setSharedElementExitTransition(transitionSet2);
 
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
         final List<RoutePlayStatus> routePlayStatuses = new ArrayList<>();
@@ -132,8 +159,9 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
         }
         mRecyclerView.setAdapter(new BaseQuickAdapter<RoutePlayStatus, BaseViewHolder>(R.layout.item_route, routePlayStatuses) {
             @Override
-            protected void convert(@NonNull BaseViewHolder helper, final RoutePlayStatus item) {
+            protected void convert(@NonNull final BaseViewHolder helper, final RoutePlayStatus item) {
                 helper.setText(R.id.tv_device_name, item.getRouteName()).setImageResource(R.id.tv_src, item.isPlaying ? R.mipmap.photo : 0);
+                helper.setTextColor(R.id.tv_device_name, item.isPlaying() ? ColorUtils.getColor(R.color.bg_green) : Color.BLACK);
                 helper.itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -148,8 +176,6 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
                 });
             }
         });
-
-
     }
 
 
@@ -172,6 +198,8 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
         mTvSingleFrame = findViewById(R.id.tv_single_frame);
         mRecyclerView = findViewById(R.id.recyclerView);
         mTvDate = findViewById(R.id.tv_date);
+        transition_layout = findViewById(R.id.transition_layout);
+        mView = findViewById(R.id.transitionName);
 
         mTvDate.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -184,15 +212,22 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
         YMD = TimeUtils.getNowString(getDateFormat("yyyy-MM-dd"));
         getNowHMS();
 
+        mTvVolume.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mPlayBackStop = LogonUtil.playBackStop(mPlayBack);
+
+            }
+        });
         LogUtils.d("nowHours" + mNowHours + "nowMinus" + mNowMinus + "nowSeconds" + mNowSeconds);
 
         mTimeRulerView.setCurrentTime(getSTime(mNowHours, mNowMinus, mNowSeconds));
-        TimeRuleView.TimePart timePart = new TimeRuleView.TimePart();
-        timePart.endTime = getSTime(Integer.valueOf(mNowHours) - 2, Integer.valueOf(mNowMinus), Integer.valueOf(mNowSeconds));
+//        TimeRuleView.TimePart timePart = new TimeRuleView.TimePart();
+//        timePart.endTime = getSTime(Integer.valueOf(mNowHours) - 2, Integer.valueOf(mNowMinus), Integer.valueOf(mNowSeconds));
         newTimeValue = getSTime(Integer.valueOf(mNowHours) - 1, Integer.valueOf(mNowMinus), Integer.valueOf(mNowSeconds));
-        timePart.startTime = getSTime(Integer.valueOf(mNowHours), Integer.valueOf(mNowMinus), Integer.valueOf(mNowSeconds));
-        mTimeParts.add(timePart);
-        mTimeRulerView.setTimePartList(mTimeParts);
+//        timePart.startTime = getSTime(Integer.valueOf(mNowHours), Integer.valueOf(mNowMinus), Integer.valueOf(mNowSeconds));
+//        mTimeParts.add(timePart);
+//        mTimeRulerView.setTimePartList(mTimeParts);
 
         mTimeRulerView.setOnTimeChangedListener(new TimeRuleView.OnTimeChangedListener() {
             @Override
@@ -200,14 +235,10 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
                 DeviceDetailActivity.this.newTimeValue = newTimeValue;
                 getStartTime();
                 getEndTime();
-                LogUtils.d("mStartTime" + mStartTime);
-                LogUtils.d("mStartTime" + mEndTime);
             }
 
             @Override
             public void onThumbUp() {
-
-
                 if (!mTimeRulerView.getScroller().computeScrollOffset()) {
                     LogUtils.d("移动停止");
                     if (mStartTime == null) {
@@ -221,39 +252,38 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
                 , mStartTime
                 , mEndTime
                 , mSelectedRoute
-                , mSurfaceView);
-
+                , mSurfaceView, messageCallBack);
     }
 
     private void play(boolean anotherDay) {
         if (anotherDay) {
             mTimeParts.clear();
+            mTimeRulerView.setTimePartList(mTimeParts);
         }
         TimeRuleView.TimePart timePart = new TimeRuleView.TimePart();
-        timePart.endTime = newTimeValue + 60 * 60;
+//        timePart.endTime = newTimeValue + 60 * 60;
 
         getNowHMS();
         int sTime = getSTime(mNowHours, mNowMinus, mNowSeconds);
         LogUtils.d("endTimemillis=" + timePart.endTime);
         LogUtils.d("nowTimemillis=" + sTime);
-        if (timePart.endTime > sTime && TimeUtils.isToday(mMillis)) {
-            timePart.endTime = sTime;
-        }
+//        if (timePart.endTime > sTime && TimeUtils.isToday(mMillis)) {
+//            timePart.endTime = sTime;
+//        }
 
-        timePart.startTime = newTimeValue - 3600;
-        mTimeParts.add(timePart);
-        mTimeRulerView.setTimePartList(mTimeParts);
-        int ret = LogonUtil.playBackStop(mPlayBack);
-        LogUtils.d("ret" + ret);
+//        timePart.startTime = newTimeValue - 3600;
+//        mTimeParts.add(timePart);
+//        mTimeRulerView.setTimePartList(mTimeParts);
+        mPlayBackStop = LogonUtil.playBackStop(mPlayBack);
+        LogUtils.d("mPlayBackStop" + mPlayBackStop);
         mPlayBack = LogonUtil.playBack(mDeviceInfo
                 , mStartTime
                 , mEndTime
                 , mSelectedRoute
-                , mSurfaceView);
+                , mSurfaceView, messageCallBack);
 
 
-
-        LogUtils.d("mPlayBack" + mPlayBack+"----mSelectedRoute="+mSelectedRoute);
+        LogUtils.d("mPlayBack" + mPlayBack + "----mSelectedRoute=" + mSelectedRoute);
     }
 
     private void getStartTime() {
@@ -286,6 +316,11 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
         return (Integer.valueOf(hours) - 1) * 3600 + Integer.valueOf(m) * 60 + Integer.valueOf(s);
     }
 
+    private int getTime(String hours, String m, String s) {
+        LogUtils.d("hours" + hours + "---m" + m + "---s" + s);
+        return (Integer.valueOf(hours)) * 3600 + Integer.valueOf(m) * 60 + Integer.valueOf(s);
+    }
+
     private int getSTime(int hours, int m, int s) {
         return (hours) * 3600 + m * 60 + s;
     }
@@ -295,6 +330,7 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
 //        Intent intent = new Intent();
 //        intent.putExtra("deviceInfo", mDeviceInfo);
 //        setResult(RESULT_OK, intent);
+        mPlayBackStop = LogonUtil.playBackStop(mPlayBack);
         super.onBackPressed();
 
     }
@@ -392,14 +428,7 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        int ret = LogonUtil.playBackStop(mPlayBack);
         LogUtils.d("onDestroy");
-//        ArrayList<Integer> playFlags = mDeviceInfo.getPlayFlags();
-//        for (Integer playFlag : playFlags) {
-//            LogonUtil.stopPlay(playFlag);
-//        }
-//        LogonUtil.logoff(mDeviceInfo.getLoginFlag());
-
     }
 
     @Override
@@ -448,6 +477,51 @@ public class DeviceDetailActivity extends BaseActivity implements BusinessContro
 
     public void onBackClick(View view) {
         super.onBackPressed();
+    }
+
+    @Override
+    public void MessageNotify(int fd, String buf, int i1, int i2) {
+        LogUtils.d("MessageNotify---" + buf);
+        try {
+            if (buf == null || StringUtils.isEmpty(buf)) {
+                ToastUtils.showShort("未找到录像");
+            } else {
+                Replay[] replays = new Gson().fromJson(buf, Replay[].class);
+                List<Replay> replayList = Arrays.asList(replays);
+                if (replayList.size() == 0) {
+                    ToastUtils.showShort("未找到录像");
+                }
+                for (Replay replay : replayList) {
+                    String starttime = replay.getStarttime();
+                    String endtime = replay.getEndtime();
+                    String[] startT = getHHMMSS(starttime);
+                    String[] endT = getHHMMSS(endtime);
+                    int startTime = getTime(startT[0], startT[1], startT[2]);
+                    int endTime = getTime(endT[0], endT[1], endT[2]);
+                    TimeRuleView.TimePart timePart = new TimeRuleView.TimePart();
+                    timePart.startTime = startTime;
+                    timePart.endTime = endTime;
+                    mTimeParts.add(timePart);
+                    mTimeRulerView.setTimePartList(mTimeParts);
+                }
+
+            }
+        } catch (JsonSyntaxException ignore) {
+        }
+
+    }
+
+    public String[] getHHMMSS(String time) {
+        if (time == null) {
+            return null;
+        }
+        String[] split = time.split(" ");
+        return split[1].split(":");
+    }
+
+    @Override
+    public void onPointerCaptureChanged(boolean hasCapture) {
+
     }
 
 

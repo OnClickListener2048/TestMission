@@ -1,5 +1,6 @@
 package com.tiandy.wangxin.testmission.adddevice;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.View;
@@ -120,9 +121,11 @@ public class AddDeviceActivity extends BaseActivity implements AddDeviceContract
     }
 
     @Override
-    public void addDeviceSuccess() {
+    public void addDeviceSuccess(DeviceInfo deviceInfo) {
         ToastUtils.showShort("添加设备成功");
-        setResult(RESULT_OK);
+        Intent intent = new Intent();
+        intent.putExtra("deviceInfo", deviceInfo);
+        setResult(RESULT_OK,intent);
         finish();
     }
 
